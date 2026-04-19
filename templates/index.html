@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>StegoVault by Nabir — LSB Steganography Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+<canvas id="matrix-canvas"></canvas>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-eye-slash"></i></div>
+      <div>
+        <div class="logo-name">StegoVault</div>
+        <div class="logo-sub">LSB Steganography · AES-256-GCM · Built by Nabir</div>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <button class="tab-btn active" data-tab="encode"><i class="fas fa-lock"></i> Encode</button>
+      <button class="tab-btn" data-tab="decode"><i class="fas fa-unlock"></i> Decode</button>
+      <button class="tab-btn" data-tab="about"><i class="fas fa-info-circle"></i> How it Works</button>
+    </nav>
+  </div>
+  <div class="header-scan"></div>
+</header>
+
+<main class="main-wrap">
+
+  <!-- ── ENCODE PANEL ──────────────────────────────────────────────────────── -->
+  <section class="panel active" id="tab-encode">
+    <div class="panel-grid">
+
+      <!-- Left: upload + preview -->
+      <div class="panel-col">
+        <div class="card">
+          <div class="card-title"><i class="fas fa-image" style="color:var(--cyan)"></i> Cover Image</div>
+          <div class="drop-zone" id="enc-drop">
+            <div class="drop-inner" id="enc-drop-inner">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p>Drop PNG/JPG here</p>
+              <span>or click to browse</span>
+            </div>
+            <img class="drop-preview" id="enc-preview" alt="preview"/>
+          </div>
+          <input type="file" id="enc-file" accept="image/*" style="display:none"/>
+          <div class="img-meta" id="enc-meta" style="display:none">
+            <div class="meta-row"><span>Dimensions</span><span id="enc-dim">—</span></div>
+            <div class="meta-row"><span>Capacity</span><span id="enc-cap">—</span></div>
+            <div class="meta-row"><span>Used</span><span id="enc-used">—</span></div>
+          </div>
+          <div class="capacity-bar-wrap" id="enc-cap-wrap" style="display:none">
+            <div class="capacity-bar"><div class="capacity-fill" id="enc-fill"></div></div>
+            <div class="capacity-label" id="enc-cap-label"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: message + options -->
+      <div class="panel-col">
+        <div class="card">
+          <div class="card-title"><i class="fas fa-terminal" style="color:var(--green)"></i> Secret Message</div>
+          <div class="field-group">
+            <label class="field-label">Message to Hide</label>
+            <textarea id="enc-message" placeholder="Type your secret message here..." rows="6"></textarea>
+            <div class="char-count"><span id="enc-chars">0</span> chars · <span id="enc-bytes">0</span> bytes</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">
+              <i class="fas fa-key" style="color:var(--yellow)"></i> Passphrase (optional — enables AES-256-GCM)
+            </label>
+            <div class="pass-wrap">
+              <input type="password" id="enc-pass" placeholder="Leave blank for plain embed"/>
+              <button class="pass-toggle" data-target="enc-pass"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="enc-flags" id="enc-flags" style="display:none">
+            <div class="flag-badge encrypted"><i class="fas fa-shield-alt"></i> AES-256-GCM active</div>
+          </div>
+          <button class="action-btn" id="enc-btn" disabled>
+            <i class="fas fa-lock"></i> Hide Message
+          </button>
+        </div>
+
+        <!-- Result card -->
+        <div class="card result-card" id="enc-result" style="display:none">
+          <div class="card-title"><i class="fas fa-check-circle" style="color:var(--green)"></i> Encoded Image</div>
+          <img class="result-img" id="enc-result-img" alt="encoded"/>
+          <div class="result-meta" id="enc-result-meta"></div>
+          <a class="action-btn dl-btn" id="enc-download" download="stego_output.png">
+            <i class="fas fa-download"></i> Download Steganographic Image
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Terminal log -->
+    <div class="terminal" id="enc-log">
+      <div class="term-title"><i class="fas fa-terminal"></i> Encode Log</div>
+      <div class="term-body" id="enc-log-body">
+        <div class="log-line dim">[ StegoVault ] Ready. Upload an image to begin.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DECODE PANEL ──────────────────────────────────────────────────────── -->
+  <section class="panel" id="tab-decode">
+    <div class="panel-grid">
+
+      <div class="panel-col">
+        <div class="card">
+          <div class="card-title"><i class="fas fa-image" style="color:var(--cyan)"></i> Steganographic Image</div>
+          <div class="drop-zone" id="dec-drop">
+            <div class="drop-inner" id="dec-drop-inner">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p>Drop encoded PNG here</p>
+              <span>or click to browse</span>
+            </div>
+            <img class="drop-preview" id="dec-preview" alt="preview"/>
+          </div>
+          <input type="file" id="dec-file" accept="image/*" style="display:none"/>
+          <div class="img-meta" id="dec-meta" style="display:none">
+            <div class="meta-row"><span>Dimensions</span><span id="dec-dim">—</span></div>
+            <div class="meta-row"><span>Capacity</span><span id="dec-cap">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-col">
+        <div class="card">
+          <div class="card-title"><i class="fas fa-unlock" style="color:var(--pink)"></i> Extract Message</div>
+          <div class="field-group">
+            <label class="field-label">
+              <i class="fas fa-key" style="color:var(--yellow)"></i> Passphrase (if message was encrypted)
+            </label>
+            <div class="pass-wrap">
+              <input type="password" id="dec-pass" placeholder="Leave blank if not encrypted"/>
+              <button class="pass-toggle" data-target="dec-pass"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <button class="action-btn decode-btn" id="dec-btn" disabled>
+            <i class="fas fa-search"></i> Extract Hidden Message
+          </button>
+        </div>
+
+        <div class="card result-card" id="dec-result" style="display:none">
+          <div class="card-title" id="dec-result-title">
+            <i class="fas fa-envelope-open-text" style="color:var(--green)"></i> Extracted Message
+          </div>
+          <div class="message-reveal" id="dec-message-box"></div>
+          <div class="result-meta" id="dec-result-meta"></div>
+          <button class="action-btn copy-btn" id="dec-copy">
+            <i class="fas fa-copy"></i> Copy to Clipboard
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="terminal" id="dec-log">
+      <div class="term-title"><i class="fas fa-terminal"></i> Decode Log</div>
+      <div class="term-body" id="dec-log-body">
+        <div class="log-line dim">[ StegoVault ] Ready. Upload a steganographic image to extract.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ABOUT PANEL ───────────────────────────────────────────────────────── -->
+  <section class="panel" id="tab-about">
+    <div class="about-wrap">
+      <h2 class="about-title">How Steganography Works</h2>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-icon"><i class="fas fa-image"></i></div>
+          <h3>1. Cover Image</h3>
+          <p>Any PNG or JPEG image. Each pixel has three colour channels — Red, Green, Blue — each stored as a number 0–255.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon" style="--c:var(--green)"><i class="fas fa-code"></i></div>
+          <h3>2. LSB Encoding</h3>
+          <p>The message is converted to binary. The <strong>Least Significant Bit</strong> (last bit) of each colour value is replaced with one bit of the message. Changing a pixel from 200 to 201 is invisible to the human eye.</p>
+          <div class="bit-demo">
+            <div class="bit-row">
+              <span class="bit-label">R=200</span>
+              <span class="bit-val">1100100<span class="bit-lsb">0</span></span>
+              <span class="arrow">→</span>
+              <span class="bit-val green">1100100<span class="bit-lsb green">1</span></span>
+              <span class="bit-label">R=201</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-card">
+          <div class="about-icon" style="--c:var(--yellow)"><i class="fas fa-shield-alt"></i></div>
+          <h3>3. AES-256-GCM Encryption</h3>
+          <p>When a passphrase is set, the message is encrypted with AES-256 in GCM mode before embedding. PBKDF2-SHA1 (100k iterations) derives the key from your passphrase + random salt, so brute-forcing is impractical.</p>
+          <div class="crypto-flow">
+            <span class="cf-box">Passphrase</span>
+            <span class="cf-arrow">+ Salt →</span>
+            <span class="cf-box cyan">PBKDF2</span>
+            <span class="cf-arrow">→ Key →</span>
+            <span class="cf-box green">AES-GCM</span>
+          </div>
+        </div>
+        <div class="about-card">
+          <div class="about-icon" style="--c:var(--pink)"><i class="fas fa-search"></i></div>
+          <h3>4. Detection Resistance</h3>
+          <p>LSB changes are statistically tiny. Without knowing a message is hidden, visual or histogram analysis rarely reveals its presence. Encryption adds another layer — the payload looks like random noise.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon" style="--c:#FF6600"><i class="fas fa-flag"></i></div>
+          <h3>CTF Use Case</h3>
+          <p>In Capture The Flag competitions, steg challenges hide flags inside image files. This tool was built after encountering multiple LSB steg challenges where custom tooling was needed.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon" style="--c:var(--cyan)"><i class="fas fa-ruler-combined"></i></div>
+          <h3>Capacity</h3>
+          <p>A 1920×1080 image has 2,073,600 pixels × 3 channels = <strong>6,220,800 bits</strong> = ~777 KB of payload capacity. Encrypted overhead is only ~44 bytes (salt + nonce + tag).</p>
+        </div>
+      </div>
+
+      <!-- Builder card -->
+      <div class="builder-card">
+        <div class="builder-avatar"><i class="fas fa-user-secret"></i></div>
+        <div class="builder-info">
+          <div class="builder-label">Built by</div>
+          <div class="builder-name-lg">Nabir</div>
+          <div class="builder-desc">
+            Data Analyst transitioning into Cyber Security. Built StegoVault after tackling LSB steganography
+            challenges in CTF competitions — where having a reliable, visual steg tool made all the difference.
+          </div>
+          <div class="builder-tags">
+            <span>CTF</span><span>Cyber Security</span><span>Python</span><span>Data Analysis</span><span>Steganography</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-diagram">
+        <div class="pd-title">Payload Structure</div>
+        <div class="pd-row">
+          <div class="pd-seg" style="--w:8%;--c:#FF6600">Header<br><small>5 B</small></div>
+          <div class="pd-seg" style="--w:8%;--c:var(--yellow)">Salt<br><small>16 B</small></div>
+          <div class="pd-seg" style="--w:8%;--c:var(--cyan)">Nonce<br><small>16 B</small></div>
+          <div class="pd-seg" style="--w:8%;--c:var(--pink)">Tag<br><small>16 B</small></div>
+          <div class="pd-seg" style="--w:68%;--c:var(--green)">Ciphertext (your message)<br><small>variable</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer id="site-footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <span class="footer-logo"><i class="fas fa-eye-slash"></i> StegoVault</span>
+      <span class="footer-sep">·</span>
+      <span class="footer-built">Built by <strong class="builder-name">Nabir</strong></span>
+    </div>
+    <div class="footer-right">
+      <span class="footer-stack">Python · Flask · LSB · AES-256-GCM · Pillow</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
