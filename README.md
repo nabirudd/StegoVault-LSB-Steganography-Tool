@@ -5,7 +5,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nabirudd/StegoVault-LSB-Steganography-Tool)
 
-**Live Demo:** <!-- paste your Render URL here once deployed -->
+**Live Demo:** https://stego-vault-ztg2.onrender.com/
 
 ---
 
